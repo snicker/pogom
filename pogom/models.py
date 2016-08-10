@@ -4,6 +4,7 @@
 import logging
 import random
 import math
+import calendar
 from peewee import Model, SqliteDatabase, InsertQuery, IntegerField, \
     CharField, FloatField, BooleanField, DateTimeField, fn, SQL, CompositeKey
 from datetime import datetime
@@ -137,7 +138,7 @@ def parse_map(map_dict):
                 'pokemon_id': p['pokemon_data']['pokemon_id'],
                 'latitude': p['latitude'],
                 'longitude': p['longitude'],
-                'disappear_time': pokemons[p['encounter_id']]['disappear_time'],
+                'disappear_time': calendar.timegm(pokemons[p['encounter_id']]['disappear_time'].timetuple()),
                 'last_modified_time': p['last_modified_timestamp_ms'],
                 'time_until_hidden_ms': p['time_till_hidden_ms'],
                 'is_lured': False
