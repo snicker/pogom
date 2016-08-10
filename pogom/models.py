@@ -3,6 +3,7 @@
 
 import logging
 import random
+import calendar
 import math
 from peewee import Model, SqliteDatabase, InsertQuery, IntegerField, \
     CharField, FloatField, BooleanField, DateTimeField, fn, SQL, CompositeKey
@@ -10,7 +11,7 @@ from datetime import datetime
 from base64 import b64encode
 import threading
 
-from .utils import get_pokemon_name
+from .utils import get_pokemon_name, send_to_webhook
 
 db = SqliteDatabase('pogom.db', pragmas=(
     ('journal_mode', 'WAL'),
@@ -123,6 +124,27 @@ def parse_map(map_dict):
                         (p['last_modified_timestamp_ms'] +
                          p['time_till_hidden_ms']) / 1000.0)
             }
+            
+            d_t = datetime.utcfromtimestamp(
+                (p['last_modified_timestamp_ms'] +
+                 p['time_till_hidden_ms']) / 1000.0)
+            
+
+            webhook_data = {
+                'encounter_id': b64encode(str(p['encounter_id'])),
+                'spawnpoint_id': p['spawn_point_id'],
+                'pokemon_id': p['pokemon_data']['pokemon_id'],
+                'latitude': p['latitude'],
+                'longitude': p['longitude'],
+                'disappear_time': calendar.timegm(d_t.timetuple()),
+                'last_modified_time': p['last_modified_timestamp_ms'],
+                'time_until_hidden_ms': p['time_till_hidden_ms'],
+                'is_lured': False
+            }
+            
+            logging.info("sending {} to webhook".format(webhook_data))
+
+            send_to_webhook('pokemon', webhook_data)
 
         for p in cell.get('catchable_pokemons', []):
             if p['encounter_id'] in pokemons:

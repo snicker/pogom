@@ -9,6 +9,7 @@ import sys
 import uuid
 import sys
 import platform
+import requests
 import logging
 from datetime import datetime, timedelta
 
@@ -28,6 +29,7 @@ def get_args():
     parser.add_argument('-P', '--port', type=int, help='Set web server listening port', default=5000)
 
     parser.add_argument('-d', '--debug', type=str.lower, help='Debug Level [info|debug]', default=None)
+    parser.add_argument('-wh', '--webhook', help='Define URL(s) to POST webhook information to', nargs='*', default=False, dest='webhooks')
 
     return parser.parse_args()
 
@@ -82,3 +84,20 @@ def get_encryption_lib_path():
         raise Exception(err)
 
     return lib_path
+
+def send_to_webhook(message_type, message):
+    webhooks = config['WEBHOOKS']
+
+    data = {
+        'type': message_type,
+        'message': message
+    }
+
+    if webhooks:
+        for w in webhooks:
+            try:
+                requests.post(w, json=data, timeout=(None, 1))
+            except requests.exceptions.ReadTimeout:
+                log.debug('Response timeout on webhook endpoint %s', w)
+            except requests.exceptions.RequestException as e:
+                log.debug(e)
