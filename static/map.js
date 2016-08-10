@@ -4,6 +4,7 @@ var $numThreads = $(".num-threads");
 var $numAccounts = $(".num-accounts");
 var $lastRequestLabel = $(".last-request");
 var $fullScanLabel = $(".full-scan");
+var $scanPercentLabel = $(".current-scan-percent");
 
 var $selectExclude = $("#exclude-pokemon");
 var excludedPokemon = [];
@@ -81,7 +82,6 @@ function is_logged_in(){
     }
 }
 
-
 function initMap() {
     var initLat = 40.782850;  // NYC Central Park
     var initLng = -73.965288;
@@ -144,8 +144,17 @@ function initMap() {
             "json");
         });
     }
+
+    initGeoLocation();
 };
 
+function initGeoLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            map.setCenter({lat: position.coords.latitude, lng: position.coords.longitude});
+        });
+    }
+}
 
 function pokemonLabel(name, id, disappear_time, latitude, longitude) {
     var disappear_date = new Date(disappear_time);
@@ -163,9 +172,19 @@ function pokemonLabel(name, id, disappear_time, latitude, longitude) {
         <div>\
             <a href='https://www.google.com/maps/dir/Current+Location/"+latitude+","+longitude+"'\
                     target='_blank' title='View in Maps'>Get Directions</a>\
+            <a href='#' onclick='removePokemon(\"" + id + "\")')>Hide " + name + "s</a>\
+            <a href='#' onclick='addToNotify(\"" + id + "\")')>Notify</a>\
         </div>";
     return label;
 };
+
+function removePokemon(id) {
+    var selected=$selectExclude.val();
+    selected.push(id.toString());
+    $selectExclude.val(selected);
+
+    $selectExclude.change();
+}
 
 function gymLabel(team_name, team_id, gym_points) {
     var gym_color = [ "0, 0, 0, .4", "74, 138, 202, .6", "240, 68, 58, .6", "254, 217, 40, .6" ];
@@ -204,12 +223,15 @@ function setupPokemonMarker(item) {
         icon: myIcon
     });
 
+    var label = pokemonLabel(item.pokemon_name, item.pokemon_id, item.disappear_time, item.latitude, item.longitude);
+
     marker.infoWindow = new google.maps.InfoWindow({
-        content: pokemonLabel(item.pokemon_name, item.pokemon_id, item.disappear_time, item.latitude, item.longitude),
+        content: label,
         disableAutoPan: true
     });
 
     addListeners(marker);
+
     return marker;
 }
 
@@ -391,6 +413,7 @@ function updateMap() {
                 if (item.marker) item.marker.setMap(null);
                 item.marker = setupPokemonMarker(item);
                 map_pokemons[item.encounter_id] = item;
+                notify(item);
             }
         });
 
@@ -419,6 +442,10 @@ function updateMap() {
         });
 
         clearStaleMarkers();
+    }).fail(function() {
+        $lastRequestLabel.removeClass('label-success label-warning');
+        $lastRequestLabel.addClass('label-danger');
+        $lastRequestLabel.html("Disconnected from Server")
     });
 }
 
@@ -453,6 +480,9 @@ $('#coverage-checkbox').change(function() {
 
     scanLocations.forEach(function (scanLocation, key) {
         scanLocation.circle.setVisible(this.checked);
+    }, this);
+    scanLocations.forEach(function (scanLocation, key) {
+        scanLocation.marker.setVisible(this.checked);
     }, this);
 });
 
@@ -516,7 +546,10 @@ function statusLabels(status) {
 
     var timeSinceScan = status['complete-scan-time'];
     if (timeSinceScan)
-        $fullScanLabel.html("Last full scan in "+ formatTimeDiff(timeSinceScan))
+        $fullScanLabel.html("Last scan in "+ formatTimeDiff(timeSinceScan))
+    
+    var currentScanPercentString = Number((status['current-scan-percent']).toFixed(2)).toString();
+    $scanPercentLabel.html("Current Scan: "+currentScanPercentString+"%");
 
 }
 

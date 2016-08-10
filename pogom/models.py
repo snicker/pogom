@@ -3,7 +3,6 @@
 
 import logging
 import random
-import calendar
 import math
 from peewee import Model, SqliteDatabase, InsertQuery, IntegerField, \
     CharField, FloatField, BooleanField, DateTimeField, fn, SQL, CompositeKey
@@ -109,11 +108,14 @@ def parse_map(map_dict):
     gyms = {}
 
     cells = map_dict['responses']['GET_MAP_OBJECTS']['map_cells']
+    if sum(len(cell.keys()) for cell in cells) == len(cells) * 2:
+        log.warning("Received valid response but without any data. Possibly rate-limited?")
+    
     for cell in cells:
         for p in cell.get('wild_pokemons', []):
             if p['encounter_id'] in pokemons:
                 continue  # prevent unnecessary parsing
-
+                
             pokemons[p['encounter_id']] = {
                 'encounter_id': b64encode(str(p['encounter_id'])),
                 'spawnpoint_id': p['spawn_point_id'],
@@ -125,25 +127,22 @@ def parse_map(map_dict):
                          p['time_till_hidden_ms']) / 1000.0)
             }
             
-            d_t = datetime.utcfromtimestamp(
-                (p['last_modified_timestamp_ms'] +
-                 p['time_till_hidden_ms']) / 1000.0)
+            if p['time_till_hidden_ms'] < 0:
+                pokemons[p['encounter_id']]['disappear_time'] = datetime.utcfromtimestamp(
+                        p['last_modified_timestamp_ms']/1000 + 15*60)
             
-
             webhook_data = {
                 'encounter_id': b64encode(str(p['encounter_id'])),
                 'spawnpoint_id': p['spawn_point_id'],
                 'pokemon_id': p['pokemon_data']['pokemon_id'],
                 'latitude': p['latitude'],
                 'longitude': p['longitude'],
-                'disappear_time': calendar.timegm(d_t.timetuple()),
+                'disappear_time': pokemons[p['encounter_id']]['disappear_time'],
                 'last_modified_time': p['last_modified_timestamp_ms'],
                 'time_until_hidden_ms': p['time_till_hidden_ms'],
                 'is_lured': False
             }
             
-            logging.info("sending {} to webhook".format(webhook_data))
-
             send_to_webhook('pokemon', webhook_data)
 
         for p in cell.get('catchable_pokemons', []):

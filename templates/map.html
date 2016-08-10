@@ -11,6 +11,10 @@
 
             <style>
 
+* {
+  box-sizing: border-box;
+}
+
 html, body {
   height: 100%;
   margin: 0;
@@ -171,7 +175,7 @@ span.select2 { width: 100% !important; }
     background-color: #777;
 }
 .label {
-    display: inline-block;
+    display: block;
     padding: .25em .4em;
     font-size: 75%;
     font-weight: 700;
@@ -182,6 +186,15 @@ span.select2 { width: 100% !important; }
     vertical-align: baseline;
     border-radius: .25rem;
     margin-bottom: 2px;
+}
+
+.current-scan-percent {
+  margin-bottom: 1px;
+}
+
+.num-threads, .num-accounts {
+  width: 49%;
+  display: inline-block;
 }
 
 .chckbox {
@@ -202,19 +215,21 @@ span.select2 { width: 100% !important; }
             <div id="menu">
                 <div id="menu-container">
                     <h1>Settings</h1>
-                    <p>
+                    <p style="margin: 8px 0">
                         {% if is_authenticated %}
-                            <span class='auth-status label label-success'>Authenticated</span>
+                            <span class="auth-status label label-success">Authenticated</span>
                         {% else %}
-                            <span class='auth-status label label-warning'><a href="login" style="color: white; text-decoration: inherit;">Not authenticated</a></span>
+                            <span class="auth-status label label-warning"><a href="login" style="color: white; text-decoration: inherit;">Not authenticated</a></span>
                         {% endif %}
-                        <br />
-                        <span class='last-request label label-warning'>No scans yet</span>
-                        <span class='full-scan label label-grey'>No full scan yet</span>
-                        <span class='num-threads label label-grey'>0 Threads</span>
-                        <span class='num-accounts label label-grey'>0 Accounts</span>
+                        <span class="last-request label label-warning">No scans yet</span>
                     </p>
-
+                    <p style="margin: 8px 0">
+                        <span class="full-scan label label-grey">No full scan yet</span>
+                        <span class="current-scan-percent label label-grey">Current Scan: 0.00%</span>
+                        <span class="num-threads label label-grey">0 Threads</span>
+                        <span class="num-accounts label label-grey">0 Accounts</span>
+                    </p>
+                    
                     <fieldset style="border: 0; padding-left: 0;">
                         <div class="chckbox">
                             <input type="checkbox" id="pokemon-checkbox">
@@ -251,7 +266,7 @@ span.select2 { width: 100% !important; }
 
                     <p>
                         <a href="config">Server Configuration</a> <br />
-                        <a href="stats">View Stats</a>
+                        <a href="stats">View Stats and Notifications</a>
                     </p>
 
                 </div>
@@ -269,6 +284,7 @@ span.select2 { width: 100% !important; }
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js"></script>
     <script type="text/javascript" src="static/map.js"></script>
+    <script type="text/javascript" src="static/notify.js"></script>
     <script async defer type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key={{ gmaps_key }}&callback=initMap"></script>
     
 </html>
